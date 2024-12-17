@@ -67,7 +67,7 @@ contract Controller is Ownable (msg.sender) {
         emit PriceUpdated(_newPrice, block.timestamp);
     }
     
-    function registerVehicle(address owner, string calldata vin) external onlyOwner {
+    function registerVehicle(address owner, string calldata vin) public onlyOwner {
         require(bytes(addressToVin[owner]).length == 0, "Address already has vehicle");
         require(!registeredVins[vin], "VIN already registered");
         
@@ -82,15 +82,22 @@ contract Controller is Ownable (msg.sender) {
         emit VehicleRegistered(owner, vin);
     }
     
-    function processOdometerReading(address driver, uint256 currentOdometer) external onlyOwner {
+    function processOdometerReading(address driver, uint256 currentOdometer) public onlyOwner {
         string memory vin = addressToVin[driver];
         require(bytes(vin).length > 0, "No registered vehicle");
         
         VehicleInfo storage vehicleInfo = vinToVehicleInfo[vin];
-        require(currentOdometer > vehicleInfo.lastProcessedOdometer, "Invalid odometer reading");
+        uint256 roundedCurrentReading = _roundDownToNearestHundred(currentOdometer);
         
-        uint256 milesDriven = currentOdometer - vehicleInfo.lastProcessedOdometer;
-        uint256 creditsEarned = milesDriven / MILES_PER_CREDIT;
+        require(
+            roundedCurrentReading > vehicleInfo.lastProcessedOdometer, 
+            "New reading must be higher than last processed"
+        );
+        
+        uint256 creditsEarned = _calculateCreditsEarned(
+            roundedCurrentReading, 
+            vehicleInfo.lastProcessedOdometer
+        );
         
         if (creditsEarned > 0) {
             for (uint256 i = 0; i < creditsEarned; i++) {
@@ -100,14 +107,15 @@ contract Controller is Ownable (msg.sender) {
             creditBalance[driver] += creditsEarned;
             creditsMinted[driver] += creditsEarned;
             
+            uint256 milesDriven = roundedCurrentReading - vehicleInfo.lastProcessedOdometer;
             emit CreditMinted(driver, creditsEarned, vin, milesDriven);
         }
         
-        vehicleInfo.lastProcessedOdometer = currentOdometer;
+        vehicleInfo.lastProcessedOdometer = roundedCurrentReading;
         vehicleInfo.lastProcessedTimestamp = block.timestamp;
     }
     
-    function burnCredit(uint256 amount) external {
+    function burnCredit(uint256 amount) public {
         require(amount > 0, "Amount must be greater than 0");
         require(carbonQueue._getAvailableCredits() >= amount, "Not enough credits");
         
@@ -171,5 +179,17 @@ contract Controller is Ownable (msg.sender) {
             rewardsVault._getPendingRewards(holder),
             addressToVin[holder]
         );
+    }
+
+    // helper functions
+
+    function _roundDownToNearestHundred(uint256 number) internal pure returns (uint256) {
+        return (number / 100) * 100;
+    }
+
+    function _calculateCreditsEarned(uint256 currentReading, uint256 lastProcessedReading) internal pure returns (uint256) {
+        require(currentReading > lastProcessedReading, "Invalid reading difference");
+        uint256 milesDriven = currentReading - lastProcessedReading;
+        return milesDriven / MILES_PER_CREDIT;
     }
 }
