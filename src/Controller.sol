@@ -68,6 +68,11 @@ contract Controller is Ownable (msg.sender) {
         _;
     }
     
+    function setOdometerProcessor(address _newOdometerProcessor) external onlyOwner {
+        require(_newOdometerProcessor != address(0), "Invalid odometer processor");
+        odometerProcessor = _newOdometerProcessor;
+    }
+
     function setPriceOracle(address _newPriceOracle) external onlyOwner {
         require(_newPriceOracle != address(0), "Invalid price oracle");
         priceOracle = _newPriceOracle;

@@ -491,6 +491,66 @@ contract ControllerTest is Test {
         vm.prank(driver1);
         vm.expectRevert("No rewards to withdraw");
         controller.withdrawRewards();
+    }
+
+    function test_SetOdometerProcessor() public {
+        address newProcessor = makeAddr("newProcessor");
+        
+        vm.startPrank(owner);
+        controller.setOdometerProcessor(newProcessor);
+        assertEq(controller.odometerProcessor(), newProcessor);
+        
+        vm.expectRevert("Invalid odometer processor");
+        controller.setOdometerProcessor(address(0));
+        vm.stopPrank();
+        
+        vm.prank(buyer);
+        vm.expectRevert();
+        controller.setOdometerProcessor(newProcessor);
+    }
+
+    function test_SetPriceOracle() public {
+        address newOracle = makeAddr("newOracle");
+        
+        vm.startPrank(owner);
+        controller.setPriceOracle(newOracle);
+        assertEq(controller.priceOracle(), newOracle);
+        
+        vm.expectRevert("Invalid price oracle");
+        controller.setPriceOracle(address(0));
+        vm.stopPrank();
+        
+        vm.prank(buyer);
+        vm.expectRevert();
+        controller.setPriceOracle(newOracle);
+    }
+
+    function test_UpdatePrice() public {
+        uint256 newPrice = 150 * 10**6; // 150 USDC
+        uint256 startTime = block.timestamp;
+        
+        vm.expectEmit(false, false, false, true);
+        emit PriceUpdated(newPrice, startTime);
+        
+        vm.prank(priceOracle);
+        controller.updatePrice(newPrice);
+        
+        (uint256 price, uint256 lastUpdate) = controller.getCurrentPrice();
+        assertEq(price, newPrice, "Price not updated correctly");
+        assertEq(lastUpdate, startTime, "Timestamp not updated correctly");
+        
+        vm.prank(buyer);
+        vm.expectRevert("Only price oracle");
+        controller.updatePrice(200 * 10**6);
+        
+        // Test that old oracle can't update price after new oracle is set
+        address newOracle = makeAddr("newOracle");
+        vm.prank(owner);
+        controller.setPriceOracle(newOracle);
+        
+        vm.prank(priceOracle);
+        vm.expectRevert("Only price oracle");
+        controller.updatePrice(300 * 10**6);
     }    
 
 }
