@@ -130,25 +130,6 @@ contract RewardsVaultTest is Test {
         vm.stopPrank();
     }
 
-    // function testFuzz_AddWithdrawRewards(address user, uint256 amount) public {
-    //     vm.assume(user != address(0));
-    //     vm.assume(amount > 0 && amount <= 1000000 * 10**6); // Cap at 1M USDC
-        
-    //     vm.startPrank(controller);
-        
-    //     // Add rewards
-    //     vault._addReward(user, amount);
-    //     assertEq(vault._getPendingRewards(user), amount);
-        
-    //     // Withdraw rewards
-    //     uint256 withdrawn = vault._withdrawRewards(user);
-    //     assertEq(withdrawn, amount);
-    //     assertEq(vault._getPendingRewards(user), 0);
-    //     assertEq(usdc.balanceOf(user), amount);
-        
-    //     vm.stopPrank();
-    // }
-
     function test_RewardsAccumulation() public {
         vm.startPrank(controller);
         

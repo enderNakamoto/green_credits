@@ -183,11 +183,11 @@ contract Controller is Ownable (msg.sender) {
 
     // helper functions
 
-    function _roundDownToNearestHundred(uint256 number) internal pure returns (uint256) {
+    function _roundDownToNearestHundred(uint256 number) public pure returns (uint256) {
         return (number / 100) * 100;
     }
 
-    function _calculateCreditsEarned(uint256 currentReading, uint256 lastProcessedReading) internal pure returns (uint256) {
+    function _calculateCreditsEarned(uint256 currentReading, uint256 lastProcessedReading) public pure returns (uint256) {
         require(currentReading > lastProcessedReading, "Invalid reading difference");
         uint256 milesDriven = currentReading - lastProcessedReading;
         return milesDriven / MILES_PER_CREDIT;

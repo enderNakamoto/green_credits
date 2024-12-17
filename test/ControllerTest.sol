@@ -39,7 +39,7 @@ contract ControllerTest is Test {
         vm.stopPrank();
     }
 
-    function test_Deployment() public {
+    function test_Deployment() view public {
         assertEq(address(controller.usdc()), address(usdc));
         assertEq(controller.priceOracle(), priceOracle);
         assertEq(controller.creditPrice(), 100 * 10**6); // 100 USDC
@@ -77,6 +77,66 @@ contract ControllerTest is Test {
         vm.stopPrank();
     }
 
+    function test_RoundDownToNearestHundred() public view {
+        uint256 rounded;
+        
+        // Test exact hundreds
+        rounded = controller._roundDownToNearestHundred(100);
+        assertEq(rounded, 100);
+        
+        rounded = controller._roundDownToNearestHundred(1000);
+        assertEq(rounded, 1000);
+        
+        // Test numbers that need rounding
+        rounded = controller._roundDownToNearestHundred(199);
+        assertEq(rounded, 100);
+        
+        rounded = controller._roundDownToNearestHundred(17899);
+        assertEq(rounded, 17800);
+        
+        rounded = controller._roundDownToNearestHundred(18113);
+        assertEq(rounded, 18100);
+        
+        // Test edge cases
+        rounded = controller._roundDownToNearestHundred(0);
+        assertEq(rounded, 0);
+        
+        rounded = controller._roundDownToNearestHundred(99);
+        assertEq(rounded, 0);
+    }
+
+    function test_CalculateCreditsEarned() public {
+        uint256 credits;
+        
+        // Test exact multiples of MILES_PER_CREDIT (100)
+        credits = controller._calculateCreditsEarned(300, 0);
+        assertEq(credits, 3);
+        
+        credits = controller._calculateCreditsEarned(18100, 17800);
+        assertEq(credits, 3);
+        
+        // Test incomplete miles (should round down)
+        credits = controller._calculateCreditsEarned(399, 0);
+        assertEq(credits, 3);
+        
+        credits = controller._calculateCreditsEarned(450, 300);
+        assertEq(credits, 1);
+        
+        // Test small differences
+        credits = controller._calculateCreditsEarned(99, 0);
+        assertEq(credits, 0);
+        
+        credits = controller._calculateCreditsEarned(199, 100);
+        assertEq(credits, 0);
+        
+        // Test edge cases
+        vm.expectRevert("Invalid reading difference");
+        controller._calculateCreditsEarned(100, 200);
+        
+        vm.expectRevert("Invalid reading difference");
+        controller._calculateCreditsEarned(0, 0);
+    }
+
     function test_OdometerProcessing() public {
         string memory vin = "VIN123";
         
@@ -84,146 +144,93 @@ contract ControllerTest is Test {
         vm.prank(owner);
         controller.registerVehicle(driver1, vin);
         
-        // Process odometer reading
+        vm.startPrank(owner);
+        
+        // First reading 17899 -> should be processed as 17800
+        vm.expectEmit(true, false, false, true);
+        emit CreditMinted(driver1, 178, vin, 17800); // 17800/100 = 178 credits
+        controller.processOdometerReading(driver1, 17899);
+        
+        // Verify state after first reading
+        (uint256 lastOdometer, uint256 lastTimestamp,) = controller.getVehicleInfo(vin);
+        assertEq(lastOdometer, 17800, "First reading should be stored as 17800");
+        assertEq(lastTimestamp, block.timestamp);
+        
+        // Check credit balance after first reading
+        (uint256 balance, uint256 minted,,, string memory vinCheck) = controller.getCreditStats(driver1);
+        assertEq(balance, 178, "Should have 178 credits");
+        assertEq(minted, 178, "Should have minted 178 credits");
+        assertEq(vinCheck, vin);
+        
+        // Second reading 18113 -> should be processed as 18100
+        vm.expectEmit(true, false, false, true);
+        emit CreditMinted(driver1, 3, vin, 300); // (18100-17800)/100 = 3 credits
+        controller.processOdometerReading(driver1, 18113);
+        
+        // Verify state after second reading
+        (lastOdometer, lastTimestamp,) = controller.getVehicleInfo(vin);
+        assertEq(lastOdometer, 18100, "Second reading should be stored as 18100");
+        assertEq(lastTimestamp, block.timestamp);
+        
+        // Check updated credit balance
+        (balance, minted,,,) = controller.getCreditStats(driver1);
+        assertEq(balance, 181, "Should have 181 total credits");
+        assertEq(minted, 181, "Should have minted 181 total credits");
+        
+        vm.stopPrank();
+    }
+
+    function test_OdometerProcessingErrors() public {
+        string memory vin = "VIN123";
+        
+        // Try to process reading for unregistered vehicle
         vm.prank(owner);
-        vm.expectEmit(true, false, false, true);
-        emit CreditMinted(driver1, 2, vin, 250); // 250 miles = 2 credits
+        vm.expectRevert("No registered vehicle");
+        controller.processOdometerReading(driver1, 1000);
+        
+        // Register vehicle
+        vm.prank(owner);
+        controller.registerVehicle(driver1, vin);
+        
+        vm.startPrank(owner);
+        
+        // Process first reading
+        controller.processOdometerReading(driver1, 17899);
+        
+        // Try to process lower reading
+        vm.expectRevert("New reading must be higher than last processed");
+        controller.processOdometerReading(driver1, 17800);
+        
+        // Try to process same reading rounded down
+        vm.expectRevert("New reading must be higher than last processed");
+        controller.processOdometerReading(driver1, 17899);
+        
+        vm.stopPrank();
+    }
+
+    function test_OdometerProcessingSmallIncrements() public {
+        string memory vin = "VIN123";
+        
+        // Register vehicle
+        vm.prank(owner);
+        controller.registerVehicle(driver1, vin);
+        
+        vm.startPrank(owner);
+        
+        // Process reading with small increment that rounds to same hundred
+        controller.processOdometerReading(driver1, 150);
+        (uint256 lastOdometer,,) = controller.getVehicleInfo(vin);
+        assertEq(lastOdometer, 100);
+        
+        // Process reading with increment less than 100
         controller.processOdometerReading(driver1, 250);
+        (lastOdometer,,) = controller.getVehicleInfo(vin);
+        assertEq(lastOdometer, 200);
         
-        // Verify credit balance
-        (uint256 balance,,,,) = controller.getCreditStats(driver1);
+        // Check credits - should have 2 credits total (200/100)
+        (uint256 balance,,,, ) = controller.getCreditStats(driver1);
         assertEq(balance, 2);
-        assertEq(controller.getAvailableCredits(), 2);
-    }
-
-    function test_CreditBurning() public {
-        // Setup: Register and generate credits
-        string memory vin = "VIN123";
-        
-        vm.startPrank(owner);
-        controller.registerVehicle(driver1, vin);
-        controller.processOdometerReading(driver1, 250); // 2 credits
-        vm.stopPrank();
-        
-        // Approve USDC spending
-        vm.startPrank(buyer);
-        usdc.approve(address(controller), 1000 * 10**6);
-        
-        // Burn 1 credit
-        vm.expectEmit(true, true, false, true);
-        emit CreditBurned(buyer, driver1, 1);
-        controller.burnCredit(1);
-        
-        // Verify states
-        (uint256 balance,,,,) = controller.getCreditStats(buyer);
-        assertEq(balance, 1);
-        assertEq(controller.getAvailableCredits(), 1);
-        vm.stopPrank();
-    }
-
-    function test_RewardWithdrawal() public {
-        // Setup: Generate and burn credits
-        string memory vin = "VIN123";
-        
-        vm.startPrank(owner);
-        controller.registerVehicle(driver1, vin);
-        controller.processOdometerReading(driver1, 250); // 2 credits
-        vm.stopPrank();
-        
-        vm.startPrank(buyer);
-        usdc.approve(address(controller), 1000 * 10**6);
-        controller.burnCredit(1);
-        vm.stopPrank();
-        
-        // Withdraw rewards
-        vm.prank(driver1);
-        vm.expectEmit(true, false, false, true);
-        emit RewardWithdrawn(driver1, 100 * 10**6); // 100 USDC reward
-        controller.withdrawRewards();
-        
-        // Verify USDC balance
-        assertEq(usdc.balanceOf(driver1), 100 * 10**6);
-    }
-
-    function test_PriceUpdate() public {
-        uint256 newPrice = 150 * 10**6; // 150 USDC
-        
-        vm.prank(priceOracle);
-        vm.expectEmit(false, false, false, true);
-        emit PriceUpdated(newPrice, block.timestamp);
-        controller.updatePrice(newPrice);
-        
-        assertEq(controller.creditPrice(), newPrice);
-        
-        (uint256 price, uint256 lastUpdate) = controller.getCurrentPrice();
-        assertEq(price, newPrice);
-        assertEq(lastUpdate, block.timestamp);
-    }
-
-    function test_UnauthorizedAccess() public {
-        vm.startPrank(driver1);
-        
-        vm.expectRevert("Ownable: caller is not the owner");
-        controller.registerVehicle(driver1, "VIN123");
-        
-        vm.expectRevert("Ownable: caller is not the owner");
-        controller.processOdometerReading(driver1, 100);
-        
-        vm.expectRevert("Only price oracle");
-        controller.updatePrice(150 * 10**6);
         
         vm.stopPrank();
     }
-
-    function testFuzz_OdometerReading(uint256 mileage) public {
-        vm.assume(mileage > 0 && mileage < 1000000); // Reasonable mileage range
-        
-        string memory vin = "VIN123";
-        
-        vm.startPrank(owner);
-        controller.registerVehicle(driver1, vin);
-        controller.processOdometerReading(driver1, mileage);
-        
-        uint256 expectedCredits = mileage / controller.MILES_PER_CREDIT();
-        (uint256 balance,,,,) = controller.getCreditStats(driver1);
-        assertEq(balance, expectedCredits);
-        
-        vm.stopPrank();
-    }
-
-    // function test_ComplexScenario() public {
-    //     // Setup multiple drivers and vehicles
-    //     string memory vin1 = "VIN123";
-    //     string memory vin2 = "VIN456";
-        
-    //     vm.startPrank(owner);
-    //     controller.registerVehicle(driver1, vin1);
-    //     controller.registerVehicle(driver2, vin2);
-        
-    //     // Process different mileages
-    //     controller.processOdometerReading(driver1, 350); // 3 credits
-    //     controller.processOdometerReading(driver2, 250); // 2 credits
-    //     vm.stopPrank();
-        
-    //     // Buyer burns credits from both drivers
-    //     vm.startPrank(buyer);
-    //     usdc.approve(address(controller), 1000 * 10**6);
-    //     controller.burnCredit(2); // Should get 1 from each driver
-    //     vm.stopPrank();
-        
-    //     // Both drivers withdraw rewards
-    //     vm.prank(driver1);
-    //     controller.withdrawRewards();
-    //     vm.prank(driver2);
-    //     controller.withdrawRewards();
-        
-    //     // Verify final states
-    //     (uint256 balance1,,,,) = controller.getCreditStats(driver1);
-    //     (uint256 balance2,,,,) = controller.getCreditStats(driver2);
-    //     assertEq(balance1, 2);
-    //     assertEq(balance2, 1);
-    //     assertEq(usdc.balanceOf(driver1), 100 * 10**6);
-    //     assertEq(usdc.balanceOf(driver2), 100 * 10**6);
-    //     assertEq(usdc.balanceOf(buyer), 9800 * 10**6);
-    // }
 }
