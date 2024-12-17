@@ -23,6 +23,7 @@ contract Controller is Ownable (msg.sender) {
     uint256 public totalCreditsMinted;
     uint256 public totalCreditsBurned;
     address public priceOracle;
+    address public odometerProcessor;
     
     mapping(address => uint256) public creditBalance;
     mapping(address => uint256) public creditsMinted;
@@ -39,12 +40,13 @@ contract Controller is Ownable (msg.sender) {
     event VehicleRegistered(address indexed owner, string vin);
     event PriceUpdated(uint256 newPrice, uint256 timestamp);
     
-    constructor(address _usdc, address _priceOracle) {
+    constructor(address _usdc, address _priceOracle, address _odometerProcessor) {
         require(_usdc != address(0), "Invalid USDC address");
         require(_priceOracle != address(0), "Invalid price oracle address");
         
         usdc = IERC20(_usdc);
         priceOracle = _priceOracle;
+        odometerProcessor = _odometerProcessor;
         
         carbonQueue = new CarbonQueue(address(this));
         rewardsVault = new RewardsVault(_usdc, address(this));
@@ -60,6 +62,11 @@ contract Controller is Ownable (msg.sender) {
         require(msg.sender == priceOracle, "Only price oracle");
         _;
     }
+
+    modifier onlyOdometerProcessor() {
+        require(msg.sender == odometerProcessor, "Only odometer processor");
+        _;
+    }
     
     function setPriceOracle(address _newPriceOracle) external onlyOwner {
         require(_newPriceOracle != address(0), "Invalid price oracle");
@@ -72,7 +79,7 @@ contract Controller is Ownable (msg.sender) {
         emit PriceUpdated(_newPrice, block.timestamp);
     }
     
-    function registerVehicle(address owner, string calldata vin) public onlyOwner {
+    function registerVehicle(address owner, string calldata vin) public {
         require(bytes(addressToVin[owner]).length == 0, "Address already has vehicle");
         require(!registeredVins[vin], "VIN already registered");
         
@@ -87,7 +94,7 @@ contract Controller is Ownable (msg.sender) {
         emit VehicleRegistered(owner, vin);
     }
     
-    function processOdometerReading(address driver, uint256 currentOdometer) public onlyOwner {
+    function processOdometerReading(address driver, uint256 currentOdometer) public onlyOdometerProcessor {
         string memory vin = addressToVin[driver];
         require(bytes(vin).length > 0, "No registered vehicle");
         
@@ -187,6 +194,10 @@ contract Controller is Ownable (msg.sender) {
             rewardsVault._getPendingRewards(holder),
             addressToVin[holder]
         );
+    }
+
+    function availableCredits() public view returns (uint256) {
+        return carbonQueue._getAvailableCredits();
     }
 
     // helper functions

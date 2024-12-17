@@ -10,6 +10,7 @@ contract CarbonIntegrationTest is Test {
    MockUSDC public usdc;
    address public owner;
    address public priceOracle;
+   address public odometerProcessor;
    address public tesla1;
    address public tesla2;
    address public buyer;
@@ -18,6 +19,7 @@ contract CarbonIntegrationTest is Test {
        // Create addresses
        owner = makeAddr("owner");
        priceOracle = makeAddr("priceOracle");
+       odometerProcessor = makeAddr("odometerProcessor");
        tesla1 = makeAddr("tesla1");
        tesla2 = makeAddr("tesla2");
        buyer = makeAddr("buyer");
@@ -26,7 +28,7 @@ contract CarbonIntegrationTest is Test {
        
        // Deploy system
        usdc = new MockUSDC();
-       controller = new Controller(address(usdc), priceOracle);
+       controller = new Controller(address(usdc), priceOracle, odometerProcessor);
        
        // Fund buyer with USDC
        usdc.transfer(buyer, 10000 * 10**6); // 10k USDC
@@ -36,7 +38,7 @@ contract CarbonIntegrationTest is Test {
 
    function test_CompleteFlow() public {
        // Step 2: Process odometer readings - Add Queue verification
-       vm.startPrank(owner);
+       vm.startPrank(odometerProcessor);
 
        assertEq(controller.totalCreditsMinted(), 0, "Total credits minted should be 0");
          assertEq(controller.totalCreditsBurned(), 0, "Total credits burned should be 0");
@@ -106,5 +108,8 @@ contract CarbonIntegrationTest is Test {
          // Verify total credits minted and burned
         assertEq(controller.totalCreditsMinted(), 5, "Total credits minted should be 5");
         assertEq(controller.totalCreditsBurned(), 4, "Total credits burned should be 4");
+
+        // veriify total credit balance
+        assertEq(controller.availableCredits(), 1, "System should have 1 credit left");
    }
 }

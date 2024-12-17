@@ -10,6 +10,7 @@ contract ControllerTest is Test {
     MockUSDC public usdc;
     address public owner;
     address public priceOracle;
+    address public odometerProcessor;
     address public driver1;
     address public driver2;
     address public buyer;
@@ -23,6 +24,7 @@ contract ControllerTest is Test {
     function setUp() public {
         owner = makeAddr("owner");
         priceOracle = makeAddr("priceOracle");
+        odometerProcessor = makeAddr("odometerProcessor");
         driver1 = makeAddr("driver1");
         driver2 = makeAddr("driver2");
         buyer = makeAddr("buyer");
@@ -31,7 +33,7 @@ contract ControllerTest is Test {
         
         // Deploy contracts
         usdc = new MockUSDC();
-        controller = new Controller(address(usdc), priceOracle);
+        controller = new Controller(address(usdc), priceOracle, odometerProcessor);
         
         // Since MockUSDC mints to the deployer (owner), we can now transfer
         usdc.transfer(buyer, 10000 * 10**6); // 10k USDC
@@ -144,7 +146,7 @@ contract ControllerTest is Test {
         vm.prank(owner);
         controller.registerVehicle(driver1, vin);
         
-        vm.startPrank(owner);
+        vm.startPrank(odometerProcessor);
         
         // First reading 17899 -> should be processed as 17800
         vm.expectEmit(true, false, false, true);
@@ -184,7 +186,7 @@ contract ControllerTest is Test {
         string memory vin = "VIN123";
         
         // Try to process reading for unregistered vehicle
-        vm.prank(owner);
+        vm.prank(odometerProcessor);
         vm.expectRevert("No registered vehicle");
         controller.processOdometerReading(driver1, 1000);
         
@@ -192,7 +194,7 @@ contract ControllerTest is Test {
         vm.prank(owner);
         controller.registerVehicle(driver1, vin);
         
-        vm.startPrank(owner);
+        vm.startPrank(odometerProcessor);
         
         // Process first reading
         controller.processOdometerReading(driver1, 17899);
@@ -215,7 +217,7 @@ contract ControllerTest is Test {
         vm.prank(owner);
         controller.registerVehicle(driver1, vin);
         
-        vm.startPrank(owner);
+        vm.startPrank(odometerProcessor);
         
         // Process reading with small increment that rounds to same hundred
         controller.processOdometerReading(driver1, 150);
@@ -241,7 +243,7 @@ contract ControllerTest is Test {
         vm.prank(owner);
         controller.registerVehicle(driver1, vin);
         
-        vm.prank(owner);
+        vm.prank(odometerProcessor);
         controller.processOdometerReading(driver1, 17899); // Will generate 178 credits
         
         // Prepare buyer with USDC approval
@@ -278,7 +280,7 @@ contract ControllerTest is Test {
         vm.prank(owner);
         controller.registerVehicle(driver1, vin);
         
-        vm.prank(owner);
+        vm.prank(odometerProcessor);
         controller.processOdometerReading(driver1, 17899); // Will generate 178 credits
         
         vm.startPrank(buyer);
@@ -308,11 +310,11 @@ contract ControllerTest is Test {
         string memory vin2 = "VIN456";
         
         // Setup: Register vehicles and generate credits
-        vm.startPrank(owner);
         controller.registerVehicle(driver1, vin1);
         controller.registerVehicle(driver2, vin2);
         
         // Generate credits for both drivers
+        vm.startPrank(odometerProcessor);
         controller.processOdometerReading(driver1, 300); // 3 credits
         controller.processOdometerReading(driver2, 200); // 2 credits
         vm.stopPrank();
@@ -345,8 +347,8 @@ contract ControllerTest is Test {
         string memory vin = "VIN123";
         
         // Setup: Register vehicle and generate credits
-        vm.startPrank(owner);
         controller.registerVehicle(driver1, vin);
+        vm.startPrank(odometerProcessor);
         controller.processOdometerReading(driver1, 17899); // 178 credits
         vm.stopPrank();
         
@@ -377,8 +379,8 @@ contract ControllerTest is Test {
         string memory vin = "VIN123";
         
         // Setup: Generate credits
-        vm.startPrank(owner);
         controller.registerVehicle(driver1, vin);
+        vm.startPrank(odometerProcessor);
         controller.processOdometerReading(driver1, 17899); // 178 credits
         vm.stopPrank();
         
@@ -423,9 +425,9 @@ contract ControllerTest is Test {
 
     function test_WithdrawRewardsMultipleDrivers() public {
         // Setup: Register vehicles and generate credits
-        vm.startPrank(owner);
         controller.registerVehicle(driver1, "VIN123");
         controller.registerVehicle(driver2, "VIN456");
+        vm.startPrank(odometerProcessor);
         controller.processOdometerReading(driver1, 300); // 3 credits
         controller.processOdometerReading(driver2, 200); // 2 credits
         vm.stopPrank();
@@ -463,8 +465,8 @@ contract ControllerTest is Test {
         string memory vin = "VIN123";
         
         // Setup: Generate credits
-        vm.startPrank(owner);
         controller.registerVehicle(driver1, vin);
+        vm.startPrank(odometerProcessor);
         controller.processOdometerReading(driver1, 300); // 3 credits
         vm.stopPrank();
         
