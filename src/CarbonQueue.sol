@@ -39,7 +39,7 @@ contract CarbonQueue is Ownable {
         controller = _controller;
     }
     
-    function _enqueueCredit(address holder) internal onlyController returns (uint256) {
+    function _enqueueCredit(address holder) external onlyController returns (uint256) {
         uint256 creditIndex = nextMintIndex;
         credits[nextMintIndex] = Credit({
             holder: holder,
@@ -50,7 +50,7 @@ contract CarbonQueue is Ownable {
         return creditIndex;
     }
     
-    function _dequeueCredit() internal onlyController returns (address) {
+    function _dequeueCredit() external onlyController returns (address) {
         require(nextMintIndex > nextBurnIndex, "No credits available");
         require(credits[nextBurnIndex].isValid, "Invalid credit");
         
@@ -61,11 +61,11 @@ contract CarbonQueue is Ownable {
         return holder;
     }
     
-    function _getAvailableCredits() internal view returns (uint256) {
+    function _getAvailableCredits() external view returns (uint256) {
         return nextMintIndex - nextBurnIndex;
     }
     
-    function _getCreditDetails(uint256 index) internal view returns (
+    function _getCreditDetails(uint256 index) external view returns (
         address holder,
         uint256 timestamp,
         bool isValid

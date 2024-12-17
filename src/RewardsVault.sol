@@ -22,11 +22,11 @@ contract RewardsVault is Ownable {
         controller = _controller;
     }
     
-    function _addReward(address holder, uint256 amount) internal onlyController {
+    function _addReward(address holder, uint256 amount) external onlyController {
         pendingRewards[holder] += amount;
     }
     
-    function _withdrawRewards(address holder) internal onlyController returns (uint256) {
+    function _withdrawRewards(address holder) external onlyController returns (uint256) {
         uint256 amount = pendingRewards[holder];
         if (amount > 0) {
             pendingRewards[holder] = 0;
@@ -35,7 +35,7 @@ contract RewardsVault is Ownable {
         return amount;
     }
     
-    function _getPendingRewards(address holder) internal view returns (uint256) {
+    function _getPendingRewards(address holder) external view returns (uint256) {
         return pendingRewards[holder];
     }
 }

@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./CarbonQueue.sol";
 import "./RewardsVault.sol";
 
-contract Controller is ReentrancyGuard, Ownable {
+contract Controller is Ownable (msg.sender) {
     struct VehicleInfo {
         string vin;
         uint256 lastProcessedOdometer;
@@ -83,7 +82,7 @@ contract Controller is ReentrancyGuard, Ownable {
         emit VehicleRegistered(owner, vin);
     }
     
-    function processOdometerReading(address driver, uint256 currentOdometer) external onlyOwner nonReentrant {
+    function processOdometerReading(address driver, uint256 currentOdometer) external onlyOwner {
         string memory vin = addressToVin[driver];
         require(bytes(vin).length > 0, "No registered vehicle");
         
@@ -108,7 +107,7 @@ contract Controller is ReentrancyGuard, Ownable {
         vehicleInfo.lastProcessedTimestamp = block.timestamp;
     }
     
-    function burnCredit(uint256 amount) external nonReentrant {
+    function burnCredit(uint256 amount) external {
         require(amount > 0, "Amount must be greater than 0");
         require(carbonQueue._getAvailableCredits() >= amount, "Not enough credits");
         
@@ -127,7 +126,7 @@ contract Controller is ReentrancyGuard, Ownable {
         creditBalance[msg.sender] += amount;
     }
     
-    function withdrawRewards() external nonReentrant {
+    function withdrawRewards() external {
         uint256 amount = rewardsVault._withdrawRewards(msg.sender);
         require(amount > 0, "No rewards to withdraw");
         emit RewardWithdrawn(msg.sender, amount);
