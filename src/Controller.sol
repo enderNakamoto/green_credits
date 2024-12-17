@@ -20,6 +20,8 @@ contract Controller is Ownable (msg.sender) {
     uint256 public constant MILES_PER_CREDIT = 100;
     uint256 public creditPrice;
     uint256 public lastPriceUpdate;
+    uint256 public totalCreditsMinted;
+    uint256 public totalCreditsBurned;
     address public priceOracle;
     
     mapping(address => uint256) public creditBalance;
@@ -49,6 +51,9 @@ contract Controller is Ownable (msg.sender) {
         
         creditPrice = 100 * 10**6; // Initial price 100 USDC
         lastPriceUpdate = block.timestamp;
+
+        totalCreditsMinted = 0;
+        totalCreditsBurned = 0;
     }
     
     modifier onlyPriceOracle() {
@@ -106,7 +111,9 @@ contract Controller is Ownable (msg.sender) {
             
             creditBalance[driver] += creditsEarned;
             creditsMinted[driver] += creditsEarned;
-            
+
+            totalCreditsMinted += creditsEarned;
+
             uint256 milesDriven = roundedCurrentReading - vehicleInfo.lastProcessedOdometer;
             emit CreditMinted(driver, creditsEarned, vin, milesDriven);
         }
@@ -131,6 +138,7 @@ contract Controller is Ownable (msg.sender) {
             emit CreditBurned(msg.sender, seller, 1);
         }
         
+        totalCreditsBurned += amount;
         creditBalance[msg.sender] += amount;
     }
     

@@ -37,6 +37,9 @@ contract CarbonIntegrationTest is Test {
    function test_CompleteFlow() public {
        // Step 2: Process odometer readings - Add Queue verification
        vm.startPrank(owner);
+
+       assertEq(controller.totalCreditsMinted(), 0, "Total credits minted should be 0");
+         assertEq(controller.totalCreditsBurned(), 0, "Total credits burned should be 0");
        
        // Tesla1 drives 350 miles (3 credits)
        controller.registerVehicle(tesla1, "TESLA2023_1");
@@ -99,5 +102,9 @@ contract CarbonIntegrationTest is Test {
            tesla2InitialBalance + (1 * 100 * 10**6), 
            "Tesla2 should have received 100 USDC"
        );
+
+         // Verify total credits minted and burned
+        assertEq(controller.totalCreditsMinted(), 5, "Total credits minted should be 5");
+        assertEq(controller.totalCreditsBurned(), 4, "Total credits burned should be 4");
    }
 }
