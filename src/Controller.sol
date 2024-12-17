@@ -134,7 +134,7 @@ contract Controller is Ownable (msg.sender) {
         creditBalance[msg.sender] += amount;
     }
     
-    function withdrawRewards() external {
+    function withdrawRewards() public {
         uint256 amount = rewardsVault._withdrawRewards(msg.sender);
         require(amount > 0, "No rewards to withdraw");
         emit RewardWithdrawn(msg.sender, amount);
