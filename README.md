@@ -1,9 +1,65 @@
-# EV Carbon Credits System Architecture
+# EV Carbon Credits 
 
-## System Overview
-The EV Carbon Credits system enables electric vehicle owners to earn carbon credits based on their mileage driven, which can then be purchased by buyers using USDC. The system uses a FIFO (First In, First Out) queue mechanism for credit allocation, ensuring fair distribution of rewards.
+Drive to Earn protocol for EV owners.
 
-## Core Contracts
+## System Overview - What is it?
+
+The EV Carbon Credits Protocol is a decentralized system that enables electric vehicle owners to earn carbon credits based on how much they drive, For every 100 miles driven, 1 carbon credit is awarded to the EV owner.
+
+The system uses a FIFO (First In, First Out) queue mechanism for credit allocation, ensuring fair distribution of rewards. When a buyer buys (burns) carbon credit, based on the FIFO queue - the credit owner is rewarded.
+
+The Smart Contracts for this system are deoployed on Hedera, and we also use HCS topics for decentralized record keeping of cars getting registered with VIN. 
+
+## System Architecture - How it all Works?
+
+Three parts makes up our decentralized system:
+
+1. Car Registration using HCS 
+2. Odometer Syncing (Oracles and TEEs)
+3. Hedera Smart Contracts 
+
+The diagram below shows our entire system architecture showing all three parts of the system.
+
+![alt text](image.png)
+
+We will go over each of these parts in details for a better understanding.
+
+
+## 1. Car Registration using HCS
+
+![alt text](image-1.png)
+
+For a user to register his/her car to our system, it should already be registered with [SmartCar](https://smartcar.com/). Once it is registered there, user is eady to register it with our system.
+
+User registers with VIN, and his Hedera Address (account whwre he has private key access to). We decode the VIN, and pass it via VIN verifier script that makes sure that the car in question is indeed an EV car. 
+
+> Note: for now we are only allowing Tesla Users to register, but later, we will allow all EV cars to register
+
+A vehicle identification number (VIN) is a unique 17-character code that identifies a specific vehicle. The VIN digits 1-3 is World Manufacturing Identifier, and we check for the following Tesla WMI identifiers: 
+
+* 5YJ = Fremont, California (now designated for Model S & Model 3 from 2022+)
+* 7SA = Fremont, California (now designated for Model X & Model Y from 2022+)
+* LRW = China
+* XP7 = Germany
+* SFZ = UK (Roadster 1)
+
+We will be adding other manufacturers in the future, we only support Tesla in our Proof of Concept.
+
+The VIN verification results are recorded as auditable logs of immutable and timestamped events using the Hedera Consensus Service (HCS). 
+
+We create a HCS topic and publish the verification data, which is then consumed by a bot using mirror node API and fed into smart contract. 
+
+We will also store this in a DB for our webapp, however we have implemented that yet. 
+
+## 2. Odometer Syncing (Oracles and TEEs)
+
+![alt text](image-2.png)
+
+
+
+## 3. Hedera Smart Contracts
+
+![alt text](image-3.png)
 
 ### Controller Contract
 The Controller serves as the central hub and only entry point for all system interactions. It coordinates between the queue and rewards mechanisms while managing vehicle registration and mileage tracking. The Controller is owned by an admin account and interfaces with a designated price oracle account for setting credit prices.
