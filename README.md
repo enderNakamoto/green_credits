@@ -85,11 +85,13 @@ Note: Currently, we are only allowing Tesla vehicles to register in our system, 
 
 A VIN is a unique 17-character code that identifies a specific vehicle. For Tesla vehicles, we check the World Manufacturer Identifier (WMI), which corresponds to the first three digits of the VIN. Supported Tesla WMI codes include:
 
-5YJ: Fremont, California (Model S & Model 3 from 2022 onward)
-7SA: Fremont, California (Model X & Model Y from 2022 onward)
-LRW: China
-XP7: Germany
-SFZ: United Kingdom (Roadster 1)
+* 5YJ: Fremont, California (Model S & Model 3 from 2022 onward)
+* 7SA: Fremont, California (Model X & Model Y from 2022 onward)
+* LRW: China
+* XP7: Germany
+* SFZ: United Kingdom (Roadster 1)
+* 2SC
+
 We record the VIN verification results using the Hedera Consensus Service (HCS), which provides auditable logs of immutable and timestamped events.
 
 For each verification, we create an HCS topic and publish the verification data. This data is then processed by a bot using the Hedera mirror node API and passed to the associated smart contract.
