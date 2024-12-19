@@ -2,6 +2,41 @@
 
 Drive to Earn protocol for EV owners.
 
+## Testing guide 
+
+## Prerequisites
+Make sure you have the following installed:
+- Git
+- Foundry (Forge)
+
+## Installation Steps
+
+### 1. Clone Repository
+```bash
+git clone https://github.com/enderNakamoto/green_credits.git
+cd green_credits
+```
+
+### 2. Install Forge - If you have not installed yet
+```bash
+curl -L https://foundry.paradigm.xyz | bash
+foundryup
+```
+
+### 3. Install Dependencies
+```bash
+forge install OpenZeppelin/openzeppelin-contracts
+```
+
+### 4. Run Tests
+```bash
+forge test -vvv
+```
+
+It should look like: 
+![alt text](image-4.png)
+
+
 ## Demo
 * https://green-credits.vercel.app/
 
