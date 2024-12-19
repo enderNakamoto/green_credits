@@ -2,17 +2,23 @@
 
 Drive to Earn protocol for EV owners.
 
+## Github Links
+* Contracts: https://github.com/enderNakamoto/green_credits
+* UI : https://github.com/jsmaxi/green_credits_ui
+
 ## System Overview - What is it?
 
-The EV Carbon Credits Protocol is a decentralized system that enables electric vehicle owners to earn carbon credits based on how much they drive, For every 100 miles driven, 1 carbon credit is awarded to the EV owner.
+The EV Carbon Credits Protocol is a decentralized system designed to reward electric vehicle (EV) owners for their positive environmental impact. Owners earn 1 carbon credit for every 100 miles driven, making it easy to incentivize and track sustainable behavior.
 
-The system uses a FIFO (First In, First Out) queue mechanism for credit allocation, ensuring fair distribution of rewards. When a buyer buys (burns) carbon credit, based on the FIFO queue - the credit owner is rewarded.
+Modern EVs naturally record mileage data, and we use this information to quantify the environmental benefits. On average, a gasoline car emits 400 grams of carbon dioxide per mile. By driving an EV, users avoid these emissions, contributing to a reduction of approximately 0.4 metric tons of carbon for every 1,000 miles traveled. This highlights the tangible role EV drivers play in reducing greenhouse gases and protecting the environment.
 
-The Smart Contracts for this system are deoployed on Hedera, and we also use HCS topics for decentralized record keeping of cars getting registered with VIN. 
+The protocol uses a FIFO (First In, First Out) queue to distribute rewards fairly. When a carbon credit is purchased (or burned), the reward is allocated to the appropriate credit holder based on their position in the queue.
+
+This system is powered by smart contracts deployed on the Hedera network. To ensure secure and decentralized record-keeping, Hedera Consensus Service (HCS) topics are used to log vehicle registrations, identified by their VIN (Vehicle Identification Number).
 
 ## System Architecture - How it all Works?
 
-Three parts makes up our decentralized system:
+Three parts makes up our decentralized protocol:
 
 1. Car Registration using HCS 
 2. Odometer Syncing (Oracles and TEEs)
@@ -24,37 +30,32 @@ The diagram below shows our entire system architecture showing all three parts o
 
 We will go over each of these parts in details for a better understanding.
 
-
 ## 1. Car Registration using HCS
 
 ![alt text](image-1.png)
 
-For a user to register his/her car to our system, it should already be registered with [SmartCar](https://smartcar.com/). Once it is registered there, user is eady to register it with our system.
+To register a vehicle in our system, it must first be registered with SmartCar. Once registered there, the user can proceed to register the vehicle with us.
 
-User registers with VIN, and his Hedera Address (account whwre he has private key access to). We decode the VIN, and pass it via VIN verifier script that makes sure that the car in question is indeed an EV car. 
+The registration process involves submitting the Vehicle Identification Number (VIN) and the user's Hedera account address (to which they have private key access). We decode the VIN and validate it using a VIN verification script to confirm that the vehicle is indeed an electric vehicle (EV).
 
-> Note: for now we are only allowing Tesla Users to register, but later, we will allow all EV cars to register
+Note: Currently, we are only allowing Tesla vehicles to register in our system, but we plan to expand support to all EVs in the future.
 
-A vehicle identification number (VIN) is a unique 17-character code that identifies a specific vehicle. The VIN digits 1-3 is World Manufacturing Identifier, and we check for the following Tesla WMI identifiers: 
+A VIN is a unique 17-character code that identifies a specific vehicle. For Tesla vehicles, we check the World Manufacturer Identifier (WMI), which corresponds to the first three digits of the VIN. Supported Tesla WMI codes include:
 
-* 5YJ = Fremont, California (now designated for Model S & Model 3 from 2022+)
-* 7SA = Fremont, California (now designated for Model X & Model Y from 2022+)
-* LRW = China
-* XP7 = Germany
-* SFZ = UK (Roadster 1)
+5YJ: Fremont, California (Model S & Model 3 from 2022 onward)
+7SA: Fremont, California (Model X & Model Y from 2022 onward)
+LRW: China
+XP7: Germany
+SFZ: United Kingdom (Roadster 1)
+We record the VIN verification results using the Hedera Consensus Service (HCS), which provides auditable logs of immutable and timestamped events.
 
-We will be adding other manufacturers in the future, we only support Tesla in our Proof of Concept.
+For each verification, we create an HCS topic and publish the verification data. This data is then processed by a bot using the Hedera mirror node API and passed to the associated smart contract.
 
-The VIN verification results are recorded as auditable logs of immutable and timestamped events using the Hedera Consensus Service (HCS). 
-
-We create a HCS topic and publish the verification data, which is then consumed by a bot using mirror node API and fed into smart contract. 
-
-We will also store this in a DB for our webapp, however we have implemented that yet. 
+To support our web application, we also plan to store this information in a database. However, this feature is not yet implemented in the current Proof of Concept.
 
 ## 2. Odometer Syncing (Oracles and TEEs)
 
 ![alt text](image-2.png)
-
 
 
 ## 3. Hedera Smart Contracts
@@ -85,32 +86,6 @@ Key features:
 - Safe USDC storage from credit purchases
 - Internal reward allocation tracking
 - Secure withdrawal mechanism for credit generators
-
-## Key Workflows
-
-### Credit Generation
-1. Admin registers an EV owner's vehicle with their VIN
-2. Admin submits odometer readings
-3. System calculates miles driven and mints credits (1 credit per 100 miles)
-4. New credits are added to the FIFO queue
-
-### Credit Purchase
-1. Buyer sends USDC to purchase credits
-2. System dequeues oldest credits from the queue
-3. Original credit generators receive USDC rewards in their pending balance
-4. Credit balances update for all parties
-
-### Reward Withdrawal
-1. Credit generators can withdraw their accumulated USDC rewards at any time
-2. Withdrawal triggers a direct USDC transfer from the vault
-
-## Access Control
-- Only the admin can register vehicles and process odometer readings
-- Only the price oracle can update credit prices
-- Public functions are exclusively available through the Controller
-- Queue and Vault functions are internal and only callable by the Controller
-
-This architecture ensures secure, efficient, and fair operation of the carbon credits system while maintaining clear separation of concerns between components.
 
 ## System Architecture
 
@@ -180,58 +155,4 @@ graph TB
 
     classDef contract fill:#f0f0f0,stroke:#333,stroke-width:2px
     class Controller,CarbonQueue,RewardsVault contract
-```
-
-
-
-## Usage
-
-### Build
-
-```shell
-$ forge build
-```
-
-### Test
-
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
 ```
