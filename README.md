@@ -2,6 +2,9 @@
 
 Drive to Earn protocol for EV owners.
 
+## Video Overview
+https://www.loom.com/share/74838858d63241babf02abee90eb6ec4?sid=efc46467-da77-44be-950b-c6a0c7b65125
+
 ## Testing guide 
 
 ## Prerequisites
