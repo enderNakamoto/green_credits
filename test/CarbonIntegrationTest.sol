@@ -44,12 +44,12 @@ contract CarbonIntegrationTest is Test {
          assertEq(controller.totalCreditsBurned(), 0, "Total credits burned should be 0");
        
        // Tesla1 drives 350 miles (3 credits)
-       controller.registerVehicle(tesla1, "TESLA2023_1");
+       controller.registerVehicle(tesla1, "5YJSA1S12EFP29403");
        controller.processOdometerReading(tesla1, 350);
        assertEq(controller.carbonQueue()._getAvailableCredits(), 3, "Queue should have 3 credits after Tesla1");
        
        // Tesla2 drives 250 miles (2 credits)
-       controller.registerVehicle(tesla2, "TESLA2023_2");
+       controller.registerVehicle(tesla2, "5YJSA1DP9CFP03055");
        controller.processOdometerReading(tesla2, 250);
        assertEq(controller.carbonQueue()._getAvailableCredits(), 5, "Queue should have 5 total credits");
        

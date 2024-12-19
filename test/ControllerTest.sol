@@ -49,7 +49,7 @@ contract ControllerTest is Test {
     }
 
     function test_VehicleRegistration() public {
-        string memory vin = "VIN123";
+        string memory vin = "5YJSA3H10EFP46509";
         
         vm.prank(owner);
         vm.expectEmit(true, false, false, true);
@@ -66,7 +66,7 @@ contract ControllerTest is Test {
     }
 
     function test_DuplicateRegistrationFails() public {
-        string memory vin = "VIN123";
+        string memory vin = "5YJSA3H10EFP46509";
         
         vm.startPrank(owner);
         controller.registerVehicle(driver1, vin);
@@ -75,7 +75,7 @@ contract ControllerTest is Test {
         controller.registerVehicle(driver2, vin);
         
         vm.expectRevert("Address already has vehicle");
-        controller.registerVehicle(driver1, "VIN456");
+        controller.registerVehicle(driver1, "5YJSA1S12EFP29403");
         vm.stopPrank();
     }
 
@@ -140,7 +140,7 @@ contract ControllerTest is Test {
     }
 
     function test_OdometerProcessing() public {
-        string memory vin = "VIN123";
+        string memory vin = "5YJSA3H10EFP46509";
         
         // Register vehicle
         vm.prank(owner);
@@ -183,7 +183,7 @@ contract ControllerTest is Test {
     }
 
     function test_OdometerProcessingErrors() public {
-        string memory vin = "VIN123";
+        string memory vin = "5YJSA3H10EFP46509";
         
         // Try to process reading for unregistered vehicle
         vm.prank(odometerProcessor);
@@ -211,7 +211,7 @@ contract ControllerTest is Test {
     }
 
     function test_OdometerProcessingSmallIncrements() public {
-        string memory vin = "VIN123";
+        string memory vin = "5YJSA3H10EFP46509";
         
         // Register vehicle
         vm.prank(owner);
@@ -237,7 +237,7 @@ contract ControllerTest is Test {
     }
 
     function test_BurnCredit() public {
-        string memory vin = "VIN123";
+        string memory vin = "5YJSA3H10EFP46509";
         
         // Setup: Register vehicle and generate credits
         vm.prank(owner);
@@ -274,7 +274,7 @@ contract ControllerTest is Test {
     }
 
     function test_BurnCreditErrors() public {
-        string memory vin = "VIN123";
+        string memory vin = "5YJSA3H10EFP46509";
         
         // Setup: Register vehicle and generate credits
         vm.prank(owner);
@@ -306,8 +306,8 @@ contract ControllerTest is Test {
     }
 
     function test_MultipleBurnCredits() public {
-        string memory vin1 = "VIN123";
-        string memory vin2 = "VIN456";
+        string memory vin1 = "5YJSA3H10EFP46509";
+        string memory vin2 = "5YJSA1S12EFP29403";
         
         // Setup: Register vehicles and generate credits
         controller.registerVehicle(driver1, vin1);
@@ -344,7 +344,7 @@ contract ControllerTest is Test {
     }
 
     function test_WithdrawRewards() public {
-        string memory vin = "VIN123";
+        string memory vin = "5YJSA3H10EFP46509";
         
         // Setup: Register vehicle and generate credits
         controller.registerVehicle(driver1, vin);
@@ -376,7 +376,7 @@ contract ControllerTest is Test {
     }
 
     function test_WithdrawRewardsMultipleBurns() public {
-        string memory vin = "VIN123";
+        string memory vin = "5YJSA3H10EFP46509";
         
         // Setup: Generate credits
         controller.registerVehicle(driver1, vin);
@@ -425,8 +425,8 @@ contract ControllerTest is Test {
 
     function test_WithdrawRewardsMultipleDrivers() public {
         // Setup: Register vehicles and generate credits
-        controller.registerVehicle(driver1, "VIN123");
-        controller.registerVehicle(driver2, "VIN456");
+        controller.registerVehicle(driver1, "5YJSA3H10EFP46509");
+        controller.registerVehicle(driver2, "5YJSA1S12EFP29403");
         vm.startPrank(odometerProcessor);
         controller.processOdometerReading(driver1, 300); // 3 credits
         controller.processOdometerReading(driver2, 200); // 2 credits
@@ -462,7 +462,7 @@ contract ControllerTest is Test {
     }
 
     function test_WithdrawRewardsMultipleTimes() public {
-        string memory vin = "VIN123";
+        string memory vin = "5YJSA3H10EFP46509";
         
         // Setup: Generate credits
         controller.registerVehicle(driver1, vin);
