@@ -122,6 +122,8 @@ Key features:
 - Internal dequeue function for removing credits when purchased
 - Tracking of credit validity and ownership
 
+![alt text](image-5.png)
+
 ### RewardsVault Contract
 The RewardsVault manages the USDC holdings and reward distribution system through internal functions accessible only to the Controller. It securely holds USDC from credit purchases until credit generators withdraw their rewards.
 
