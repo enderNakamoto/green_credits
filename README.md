@@ -9,6 +9,11 @@ Drive to Earn protocol for EV owners.
 * Contracts: https://github.com/enderNakamoto/green_credits
 * UI : https://github.com/jsmaxi/green_credits_ui
 
+## Verified Contracts
+* Verified Controller Contract: https://hashscan.io/testnet/contract/0.0.5288124?pf=1
+* Verified Carbon Queue: https://hashscan.io/testnet/contract/0.0.5288128?pf=1
+* Verified Rewards Vault: https://hashscan.io/testnet/contract/0.0.5288131?pf=1
+
 ## System Overview - What is it?
 
 The EV Carbon Credits Protocol is a decentralized system designed to reward electric vehicle (EV) owners for their positive environmental impact. Owners earn 1 carbon credit for every 100 miles driven, making it easy to incentivize and track sustainable behavior.
